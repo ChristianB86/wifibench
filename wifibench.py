@@ -3,7 +3,7 @@ import sys, socket, random, time, threading
 import os, signal, argparse
 
 class Client:
-   def __init__(self, server, port=3050, size=512):
+   def __init__(self, server, port=3050, size=128):
       self.port=port
       self.server=server
       self.packetsize = size
@@ -49,7 +49,7 @@ class Client:
 
 
 class Server:
-   def __init__(self, port=3050, size=512):
+   def __init__(self, port=3050, size=128):
       self.port=port
       self.datasize = size
       self.do_run=True
@@ -110,9 +110,9 @@ def main():
    args = get_args()
 
    if args['server']:
-      mode = Server(size=512, port=args['port'])
+      mode = Server(size=128, port=args['port'])
    if not args['client'] == None:
-      mode = Client(args['client'], size=512, port=args['port'])
+      mode = Client(args['client'], size=128, port=args['port'])
    mode.start()
 
 def shutdown(a, b):
