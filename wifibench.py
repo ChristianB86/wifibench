@@ -117,7 +117,6 @@ def main():
 
 def shutdown(a, b):
    global mode
-   print('Shutdown')
    mode.do_run=False
 
 def wbhelp():
