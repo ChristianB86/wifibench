@@ -3,7 +3,7 @@ import sys, socket, random, time, threading
 import os, signal, argparse
 
 class Client:
-   def __init__(self, server, port=3050, size=1024):
+   def __init__(self, server, port=3050, size=512):
       self.port=port
       self.server=server
       self.packetsize = size
