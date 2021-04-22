@@ -3,16 +3,39 @@ import sys, socket, random, time, threading
 import os, signal, argparse
 
 class Client:
-   def __init__(self, server, port=3050, size=128):
+   def __init__(self, server, port=3050, size=128, duration=0, silent=False):
       self.port=port
+      self.silent=silent
+      self.duration=duration
       self.server=server
       self.packetsize = size
       self.counter=0
       self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM, 0)
       self.do_run=True
 
+   def result(self):
+      duration=time.time()-self.time
+      bps = self.counter / duration * 8
+      if self.silent:
+         print(bps)
+      else:
+         res = self.parse(bps)
+         print('\nAverage:\n', res)
+
+   def parse(self, bps):
+      out=bps
+      unit='b'
+      if bps >= 1048576:
+         out = round(bps / 1048576, 2)
+         unit='Mb'
+      elif bps >= 1024:
+         out = round(bps /1024, 2)
+         unit='Kb'
+      return f'{out} {unit}it/s'
+
    def start(self):
-      print('Client mode started')
+      if not self.silent: print('Client mode started')
+      self.time = time.time()
       try:
          self.thread = threading.Thread(target=self.status).start()
          self.socket.connect( (self.server, self.port) )
@@ -27,24 +50,21 @@ class Client:
       while True:
          x=self.counter
          self.wait(5)
-         if not self.do_run: break
+         if not self.do_run:
+            self.result()
+            break
          x2=(self.counter-x) / 5
-         unit='b'
-         if x2 >= 1048576:
-            x2 = round(x2 / 1048576, 2)
-            unit='Mb'
-         elif x2 >= 1024:
-            x2 = round(x2 /1024, 2)
-            unit='Kb'
-         bit=x2*8
-         print(f'{x2} {unit}yte/s - {bit}{unit}it/s')
-         
+         out = self.parse(x2*8)
+         if not self.silent: print(out)
+
    def wait(self, s):
       start=time.time()
       while time.time() - start < s:
+         if self.duration > 0 and time.time() - self.time >= self.duration:
+            self.do_run=False
+            break
          if not self.do_run: break
          time.sleep(0.5)
-      
 
 
 
@@ -100,10 +120,12 @@ def get_args():
    group.add_argument('-s', '--server', help='Server mode', action='store_true')
    group.add_argument('-c', '--client', help='Client mode', metavar='<server address>')
    parser.add_argument('-p', '--port', help='Port number', default='3050', type=int)
+   parser.add_argument('-t', help='duration in seconds', default='0', type=int)
+   parser.add_argument('--silent', help='only show average bit/s', action='store_true')
    return vars(parser.parse_args())
 
 def main():
-   global mode   
+   global mode
    signal.signal(signal.SIGTERM, shutdown)
    signal.signal(signal.SIGINT, shutdown)
 
@@ -112,7 +134,7 @@ def main():
    if args['server']:
       mode = Server(size=128, port=args['port'])
    if not args['client'] == None:
-      mode = Client(args['client'], size=128, port=args['port'])
+      mode = Client(args['client'], size=128, port=args['port'], duration=args['t'], silent=args['silent'])
    mode.start()
 
 def shutdown(a, b):
